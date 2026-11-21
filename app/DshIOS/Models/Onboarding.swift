@@ -52,7 +52,8 @@ extension AppModel {
         for key in entry["settingsPath"].array.compactMap(\.string) { profile = profile[key] }
         guard let ref = profile["apiKeyEnv"].string, !ref.isEmpty else { return nil }
         let described = try? await client.call("credentials/describe", ["refs": [.string(ref)]])
-        return described?[ref]["configured"].bool == true ? nil : ref
+        let configured = described?[ref]["configured"].bool ?? described?.array.first?["configured"].bool
+        return configured == true ? nil : ref
     }
 
     /// The official provider join, reduced to the question the step asks: any

@@ -37,6 +37,10 @@ void dsh_native_contacts(NSString *op, NSDictionary *args, DshNativeReply reply)
 void dsh_native_compose(NSString *op, NSDictionary *args, DshNativeReply reply);
 void dsh_native_files(NSString *op, NSDictionary *args, DshNativeReply reply);
 void dsh_native_music(NSString *op, NSDictionary *args, DshNativeReply reply);
+void dsh_native_shortcuts(NSString *op, NSDictionary *args, DshNativeReply reply);
+void dsh_native_camera(NSString *op, NSDictionary *args, DshNativeReply reply);
+void dsh_native_bluetooth(NSString *op, NSDictionary *args, DshNativeReply reply);
+void dsh_native_nfc(NSString *op, NSDictionary *args, DshNativeReply reply);
 
 /// The locale to ask a geocoder to answer `query` in, chosen by the script the
 /// query is written in.
@@ -106,6 +110,10 @@ void DshContactsGrantAccess(void (^done)(BOOL granted, NSString *error));
 /// Raise the media-library permission dialog, then run `done`. Only
 /// `DshNativeRequestPermission` calls this; see caps_music.m.
 void DshMusicGrantAccess(void (^done)(BOOL granted, NSString *error));
+
+/// Raise the camera permission dialog. Only `DshNativeRequestPermission` calls
+/// it; the camera itself also asks on first use.
+void DshCameraGrantAccess(void (^done)(BOOL granted, NSString *error));
 
 /// Run `block` on the main thread and return without waiting. UIKit, AVFoundation
 /// and the permission prompts all want the main thread; the engine calls us from

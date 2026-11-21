@@ -1980,6 +1980,139 @@ const browser = (ctx, catalog = describe('browser') ?? NO_CATALOG) => defineTool
   },
 });
 
+const shortcuts = defineTool({
+  name: 'shortcuts',
+  description:
+    'Run one of the user\'s Shortcuts by name. Shortcuts is the general way to reach apps and system '
+    + 'actions that have no native tool here: opening an app, toggling a setting, sending a prepared '
+    + 'message, chaining several steps. iOS may open the Shortcuts app and ask the user to confirm; '
+    + 'this call returns when Shortcuts has been asked to run, NOT when the shortcut has finished. '
+    + 'For a result, have the shortcut show it, ask the user, or read the screen with phone control.',
+  parameters: {
+    action: { type: 'string', enum: ['run'], description: 'run a shortcut', required: true },
+    name: { type: 'string', description: 'the shortcut name exactly as it appears in the Shortcuts app', required: true },
+    input: { type: 'string', description: 'optional text passed to the shortcut as its input' },
+  },
+  output: {
+    schema: { type: 'json' },
+    render: (args, value) => text(value?.started
+      ? `Asked Shortcuts to run “${args.name}”. It may ask the user to confirm; this does not mean it has finished.`
+      : 'Shortcuts did not open.'),
+  },
+  execute: async (args) => {
+    if (args.action !== 'run') throw new Error(`shortcuts: unknown action '${args.action}'`);
+    if (typeof args.name !== 'string' || args.name.trim().length === 0) {
+      throw new Error('shortcuts: `run` needs a non-empty `name`');
+    }
+    return invoke('shortcuts', 'run', {
+      name: args.name.trim(),
+      ...(args.input === undefined ? {} : { input: args.input }),
+    });
+  },
+});
+
+const camera = defineTool({
+  name: 'camera',
+  description:
+    'Use the camera through the system camera UI. `capture` takes one still picture and returns its '
+    + 'path in the workspace, so `image_analysis` or `photos` can read it; nothing is added to the '
+    + 'user\'s photo library. `scan` opens a live preview and returns the first QR code or barcode '
+    + 'it sees. Both wait for the user; closing the camera is a normal `cancelled` answer, not an error.',
+  parameters: {
+    action: {
+      type: 'string',
+      enum: ['capture', 'scan'],
+      description: 'take one picture, or scan a QR code / barcode from a live preview',
+      required: true,
+    },
+  },
+  output: {
+    schema: { type: 'json' },
+    render: (args, value) => {
+      if (value?.cancelled) return text('The user closed the camera without a picture or code.');
+      if (args.action === 'capture') {
+        return text(`Picture saved at ${value.path} (${value.width}x${value.height}, ${value.bytes} bytes).`);
+      }
+      return text(`Scanned ${value.type}: ${value.value}`);
+    },
+  },
+  execute: async (args) => invoke('camera', args.action),
+});
+
+const bluetoothTool = defineTool({
+  name: 'bluetooth',
+  description:
+    'Work with Bluetooth LE peripherals through the phone: `state`, `scan`, `connect`, '
+    + '`characteristics`, `read`, `write`, `notify`, `disconnect`. `scan` returns id, name, RSSI and '
+    + 'advertised services; pass an id to `connect`, then a service UUID to `characteristics`, then '
+    + 'the characteristic UUID to `read`/`write`. `write` takes exactly one of `hex`, `base64` or '
+    + '`text`; values read back come as hex and base64. Writing to a peripheral is a real action: '
+    + 'say what you are about to do and why before doing it.',
+  parameters: {
+    action: {
+      type: 'string',
+      enum: ['state', 'scan', 'connect', 'disconnect', 'characteristics', 'read', 'write', 'notify'],
+      description: 'the operation',
+      required: true,
+    },
+    id: { type: 'string', description: 'peripheral id from scan, for connect/read/write/etc.' },
+    seconds: { type: 'number', description: 'scan: how long to listen, 1-30; defaults to 5' },
+    services: {
+      type: 'array', items: { type: 'string' },
+      description: 'scan: only advertise these service UUIDs',
+    },
+    service: { type: 'string', description: 'service UUID for characteristics/read/write/notify' },
+    characteristic: { type: 'string', description: 'characteristic UUID for read/write/notify' },
+    hex: { type: 'string', description: 'write: data as hexadecimal, e.g. 0102ff' },
+    base64: { type: 'string', description: 'write: data as base64' },
+    text: { type: 'string', description: 'write: data as UTF-8 text' },
+    withoutResponse: { type: 'boolean', description: 'write: use write-without-response; defaults to false' },
+    enabled: { type: 'boolean', description: 'notify: turn notifications on (default) or off' },
+  },
+  output: {
+    schema: { type: 'json' },
+    render: (args, value) => {
+      if (args.action === 'scan') {
+        const lines = (value.peripherals ?? []).map((p) =>
+          `${p.name}  ${p.id}  RSSI ${p.rssi}${p.services?.length ? `  ${p.services.join(', ')}` : ''}`);
+        return text(lines.length > 0 ? lines.join('\n') : 'No Bluetooth LE peripherals answered.');
+      }
+      if (args.action === 'read') {
+        return text(`Read ${value.length} byte(s) from ${value.characteristic}: ${value.hex}`);
+      }
+      return text(JSON.stringify(value, null, 2));
+    },
+  },
+  execute: async (args) => {
+    const { action, ...rest } = args;
+    return invoke('bluetooth', action, rest);
+  },
+});
+
+const nfc = defineTool({
+  name: 'nfc',
+  description:
+    'Read one NFC tag with the system NFC sheet. The user holds the phone to the tag; the call waits '
+    + 'for that and returns the NDEF records (text and URI are decoded when present, the raw payload '
+    + 'is base64). Reading only. Requires an NFC-entitled signing profile.',
+  parameters: {
+    action: { type: 'string', enum: ['scan'], description: 'scan one NDEF tag', required: true },
+    message: { type: 'string', description: 'optional line shown in the system NFC sheet' },
+  },
+  output: {
+    schema: { type: 'json' },
+    render: (args, value) => {
+      if (value?.cancelled) return text('The user closed the NFC sheet without a tag.');
+      const lines = (value.records ?? []).map((record) =>
+        record.uri ?? record.text ?? `record ${record.type || record.typeNameFormat} (${record.payload})`);
+      return text(lines.length > 0 ? lines.join('\n') : 'The tag carried no NDEF records.');
+    },
+  },
+  execute: async (args) => invoke('nfc', args.action, {
+    ...(args.message === undefined ? {} : { message: args.message }),
+  }),
+});
+
 // A tool is a definition, or a function of the registering context for the
 // few that need the engine itself.
 export const TOOLS = {
@@ -2005,4 +2138,8 @@ export const TOOLS = {
   files: files,
   weather: weather,
   browser: browser,
+  shortcuts: shortcuts,
+  camera: camera,
+  bluetooth: bluetoothTool,
+  nfc: nfc,
 };

@@ -11,3 +11,6 @@ DerivedData/
 xcuserdata/
 # Local build settings (scripts/local-env.sh)
 .env.local
+
+# Generated IPA and build artifacts at the repository root
+build/

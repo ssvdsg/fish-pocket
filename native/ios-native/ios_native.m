@@ -140,6 +140,22 @@ static const dsh_capability CAPABILITIES[] = {
   // stopping playback is audible to the whole room, so it obeys the write policy.
   {"music",    dsh_native_music,    {"search", "playlists", "play", "pause", "next", "previous", "now", NULL},
    "music", {"play", "pause", "next", "previous", NULL}, false},
+  // The Shortcuts URL scheme is the public way to run one; the user may still
+  // have to confirm in Shortcuts. A dedicated tool keeps the name/input encoding
+  // and the "started, not finished" answer in one place.
+  {"shortcuts", dsh_native_shortcuts, {"run", NULL}, NULL, {NULL}, false},
+  // One still picture, or a live QR/barcode preview. Both write only inside the
+  // engine's own filesystem; the system camera permission is the only grant.
+  {"camera",   dsh_native_camera,   {"capture", "scan", NULL}, "camera", {NULL}, false},
+  // One central manager for the app's lifetime. Connecting and writing change a
+  // device outside the phone, not the user's own data, so the app switch is the
+  // gate; iOS asks for Bluetooth access on first use.
+  {"bluetooth", dsh_native_bluetooth,
+   {"state", "scan", "connect", "disconnect", "characteristics", "read", "write", "notify", NULL},
+   NULL, {NULL}, true},
+  // NDEF reading only. CoreNFC has no separate permission prompt: the system
+  // sheet is the consent. The app switch keeps it off until the user turns it on.
+  {"nfc",      dsh_native_nfc,      {"scan", NULL}, NULL, {NULL}, true},
   // Apple's forecast for a coordinate the caller already has. It never reads
   // the user's position — "weather here" is `location` first, then this — so
   // there is no permission to grant. Swift behind DshWeatherBridge.h.
@@ -292,6 +308,8 @@ void DshNativeRequestPermission(NSString *permission, void (^done)(BOOL granted,
     DshContactsGrantAccess(reply);
   } else if ([permission isEqualToString:@"music"]) {
     DshMusicGrantAccess(reply);
+  } else if ([permission isEqualToString:@"camera"]) {
+    DshCameraGrantAccess(reply);
   } else {
     // In the table, but nothing here knows how to ask for it: a capability was
     // added with a new `systemPermission` and this function was not extended.

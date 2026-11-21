@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 import Contacts
 import CoreLocation
 import EventKit
@@ -204,6 +205,9 @@ struct NativeCapabilitySections: View {
         if needed.contains(NativeCapability.musicPermission) {
             permissions[NativeCapability.musicPermission] = .ofMusic(MPMediaLibrary.authorizationStatus())
         }
+        if needed.contains(NativeCapability.cameraPermission) {
+            permissions[NativeCapability.cameraPermission] = .ofCamera(AVCaptureDevice.authorizationStatus(for: .video))
+        }
         if needed.contains(NativeCapability.alarmPermission), let alarms = DshAlarmCurrentProvider() {
             // 闹钟的状态在 Swift 提供方手里（AlarmKit 没有 ObjC 接口）。这个查询只读
             // 不弹框。漏了它的话这一行会落到「随时可用」，连「开启」按钮都没有。
@@ -296,6 +300,14 @@ enum CapabilityPermission {
         }
     }
 
+    static func ofCamera(_ status: AVAuthorizationStatus) -> CapabilityPermission {
+        switch status {
+        case .authorized: return .allowed
+        case .denied, .restricted: return .denied
+        default: return .notDetermined
+        }
+    }
+
     static func ofMusic(_ status: MPMediaLibraryAuthorizationStatus) -> CapabilityPermission {
         switch status {
         case .authorized: return .allowed
@@ -381,6 +393,7 @@ struct NativeCapability: Identifiable {
     static let contactsPermission = "contacts"
     static let alarmPermission = "alarm"
     static let musicPermission = "music"
+    static let cameraPermission = "camera"
 
     let id: String
     let ops: [String]
@@ -438,6 +451,10 @@ struct NativeCapability: Identifiable {
         case "browser": return String(localized: "浏览器")
         case "calendar": return String(localized: "日历")
         case "reminders": return String(localized: "提醒事项")
+        case "shortcuts": return String(localized: "快捷指令")
+        case "camera": return String(localized: "相机")
+        case "bluetooth": return String(localized: "蓝牙")
+        case "nfc": return String(localized: "NFC")
         default: return id
         }
     }
@@ -466,6 +483,10 @@ struct NativeCapability: Identifiable {
         case "browser": return String(localized: "在会话工作台的浏览器里打开网页、读内容、截图、点按钮和填表，还能带着登录状态发请求、读写 Cookie、下载和上传文件、给网页加常驻脚本，你可以在工作台里看着它操作。登录过的网站会一直记住，和 Safari 分开；智能体读得到这些网站的登录凭据")
         case "calendar": return String(localized: "查看你的日程，并按你设的写入方式增删改")
         case "reminders": return String(localized: "查看「提醒事项」里的待办，并按你设的写入方式增删改")
+        case "shortcuts": return String(localized: "按名字运行你的快捷指令，覆盖没有专用工具的操作。是否执行由快捷指令和 iOS 决定")
+        case "camera": return String(localized: "拍一张照片，或打开实时预览扫描二维码/条形码。照片只写入工作区，不会存进相册")
+        case "bluetooth": return String(localized: "扫描、连接附近的蓝牙 LE 外设，读取或写入它的特征值。写操作会改变真实设备")
+        case "nfc": return String(localized: "读取 NFC 标签里的 NDEF 内容。只读，不写标签")
         default: return ops.joined(separator: " · ")
         }
     }
@@ -495,6 +516,10 @@ struct NativeCapability: Identifiable {
         case "browser": return "safari"
         case "calendar": return "calendar"
         case "reminders": return "checklist"
+        case "shortcuts": return "square.stack.3d.up"
+        case "camera": return "camera"
+        case "bluetooth": return "antenna.radiowaves.left.and.right"
+        case "nfc": return "wave.3.right.circle"
         default: return "square.grid.2x2"
         }
     }
