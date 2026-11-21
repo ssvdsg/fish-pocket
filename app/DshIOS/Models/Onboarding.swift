@@ -22,8 +22,6 @@ extension AppModel {
         case officialKey
         /// Another provider's key, kept in settings.
         case settings
-        /// Signing in to Fish Pocket (its credits pay for the `fish-pocket` route).
-        case fishPocket
         /// 设置 → 生图: an image provider's key or sign-in.
         case imageGen
     }
@@ -71,9 +69,9 @@ extension AppModel {
         }
 
         // Routes whose credential is a sign-in rather than a key count once they offer models:
-        // the DeepSeek account, and Fish Pocket (its runtime key arrives with signing in).
+        // the DeepSeek account.
         var signedInRoutes: Set<String> = []
-        if rows.contains(where: { $0.provider == "deepseek-account" || $0.provider == FishPocketAPI.provider }),
+        if rows.contains(where: { $0.provider == "deepseek-account" }),
            let catalog = try? await client.call("session/modelCatalog") {
             for group in catalog["groups"].array where !group["models"].array.isEmpty {
                 if let id = group["id"].string { signedInRoutes.insert(id) }
@@ -94,7 +92,7 @@ extension AppModel {
 
         let usable = rows.contains { row in
             guard row.active else { return false }
-            if row.provider == "deepseek-account" || row.provider == FishPocketAPI.provider { return signedInRoutes.contains(row.provider) }
+            if row.provider == "deepseek-account" { return signedInRoutes.contains(row.provider) }
             guard let ref = row.keyRef else { return true }
             return credentials[ref]?["configured"].bool == true
         }

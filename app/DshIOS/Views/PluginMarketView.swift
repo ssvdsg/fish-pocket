@@ -21,11 +21,8 @@ final class PluginMarketModel {
     private(set) var result: JSON?
     /// Every entry read so far, in index order; pages are counted in these.
     private(set) var fetched: [JSON] = []
-    /// What the market lists: a plugin the Fish Pocket service took down (`PluginReports`) is left out.
-    var entries: [JSON] {
-        let reports = PluginReports.shared
-        return reports.takedowns.isEmpty ? fetched : fetched.filter { !reports.removed($0["name"].string ?? "") }
-    }
+    /// What the market lists.
+    var entries: [JSON] { fetched }
     private(set) var loading = false
     private(set) var loadingMore = false
     /// The first page's read failed: what the list shows is the last one read, or nothing.
@@ -177,7 +174,6 @@ final class PluginMarketModel {
         loading = true
         failure = nil
         moreFailure = nil
-        PluginReports.shared.loadTakedowns()
         do {
             let value = try await app.client.call("pluginMarket/search", searchArgs(url: url, offset: 0, limit: limit ?? pageSize, fetchedAt: nil, refresh: refresh))
             guard current == generation else { return }

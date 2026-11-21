@@ -12,7 +12,7 @@ struct MainView: View {
     /// The phone's tabs.
     enum HomeTab: Hashable { case sessions, bot, apps, explore }
 
-    enum Sheet: String, Identifiable { case settings, plugins, store, schedules, signIn, cordis, share, watch, capabilities, connectors, phoneControl, remote, fishPocket, miniApps, imageGen; var id: String { rawValue } }
+    enum Sheet: String, Identifiable { case settings, plugins, store, schedules, signIn, cordis, share, watch, capabilities, connectors, phoneControl, remote, miniApps, imageGen; var id: String { rawValue } }
 
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -56,8 +56,6 @@ struct MainView: View {
     @State private var onboarding: Onboarding?
     /// 「添加 API Key」 was chosen in the sign-in sheet: its key editor follows once that sheet is gone.
     @State private var keyEditorRef: String?
-    /// 「Fish Pocket 账号」 was chosen in the sign-in sheet: its page follows once that sheet is gone.
-    @State private var fishPocketAfterOnboarding = false
     /// The ask for a rating or a share (`SupportPrompt`'s `.support`).
     @State private var supportDialog = false
     /// 「新功能」 after an update (`WhatsNew`).
@@ -510,8 +508,6 @@ struct MainView: View {
         case "phonecontrol": sheet = .phoneControl
         case "remote": sheet = .remote
         case "start": Task { await openCredentials(.start) }
-        case "fishpocket": sheet = .fishPocket
-        case "topup": app.fishPocket.quotaPrompt = true
         case "miniapps": if usesTabs { tab = .apps } else { sheet = .miniApps }
         case "miniapp": MiniAppPresenter.open(UserDefaults.standard.string(forKey: "dshApp") ?? "")
         default: break
@@ -537,7 +533,6 @@ struct MainView: View {
         case .connectors: SheetStack { BotConnectorsPage() }.settingsStyle()
         case .phoneControl: SheetStack { PhoneControlView() }.environment(\.systemLists, true)
         case .remote: SheetStack { RemoteControlPage() }.environment(\.systemLists, true)
-        case .fishPocket: SheetStack { FishPocketPage() }
         case .miniApps: SheetStack { MiniAppsPage() }
         // 设置 → 生图, opened straight from a failed image in a conversation.
         case .imageGen: SheetStack { ImageGenSettingsPage() }.settingsStyle()
@@ -553,7 +548,6 @@ struct MainView: View {
                 SignInSheet(
                     autoStart: autoStart,
                     addAPIKey: { keyEditorRef = ref },
-                    useFishPocket: fishPocketOption
                 )
             case .key(let ref):
                 OnboardingKeySheet(ref: ref) { onboarding = nil }
@@ -585,10 +579,6 @@ struct MainView: View {
         } message: {
             Text("充值后才能开始新会话，也可稍后在「设置 → 账号与余额」充值。")
         }
-        // A live turn ran out of Fish Pocket credits: the packs, bought in the app.
-        .sheet(isPresented: Binding(get: { app.fishPocket.quotaPrompt }, set: { app.fishPocket.quotaPrompt = $0 })) {
-            FishPocketTopUpSheet().sheetNotices()
-        }
         .alert("引擎起来了", isPresented: Binding(get: { recovered != nil }, set: { if !$0 { recovered = nil } })) {
             if recovered?.contains(where: { $0.action == "safe-mode" && !($0.disabled ?? []).isEmpty }) == true {
                 Button("去插件页") { sheet = .plugins }
@@ -612,7 +602,6 @@ struct MainView: View {
     private func openCredentials(_ step: AppModel.CredentialStep) async {
         sheet = nil
         if case .settings = step { sheet = .settings; return }
-        if case .fishPocket = step { sheet = .fishPocket; return }
         if case .imageGen = step { sheet = .imageGen; return }
         guard let ref = await app.officialKeyRef() else {
             if case .officialKey = step { sheet = .settings } else { sheet = .signIn }
@@ -623,24 +612,13 @@ struct MainView: View {
             if case .signIn = step { onboarding = .signIn(ref: ref, autoStart: true) } else { onboarding = .signIn(ref: ref) }
         case .officialKey:
             onboarding = .key(ref: ref)
-        case .settings, .fishPocket, .imageGen:
+        case .settings, .imageGen:
             break
         }
     }
 
-    /// The sign-in sheet's Fish Pocket way in, when this build has the service.
-    private var fishPocketOption: (() -> Void)? {
-        guard app.fishPocket.available else { return nil }
-        return { fishPocketAfterOnboarding = true }
-    }
-
     /// 「添加 API Key」 in the sign-in sheet hands over to the key editor once that sheet is gone.
     private func onboardingDismissed() {
-        if fishPocketAfterOnboarding {
-            fishPocketAfterOnboarding = false
-            sheet = .fishPocket
-            return
-        }
         guard let ref = keyEditorRef else { return }
         keyEditorRef = nil
         onboarding = .key(ref: ref)

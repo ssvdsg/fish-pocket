@@ -79,11 +79,9 @@ final class ModelProvidersModel {
             }
             let active = Set(registered.array.compactMap { $0["id"].string })
             let declared = Set(directory.array.compactMap { $0["provider"].string })
-            // Fish Pocket credits have their own page (sign-in, not a key to edit here).
             var entries = directory.array
-                .filter { $0["provider"].string != FishPocketAPI.provider }
                 .map { $0.setting(["active"], .bool(active.contains($0["provider"].string ?? ""))) }
-            for provider in registered.array where !declared.contains(provider["id"].string ?? "") && provider["id"].string != FishPocketAPI.provider {
+            for provider in registered.array where !declared.contains(provider["id"].string ?? "") {
                 entries.append(["provider": provider["id"], "displayName": provider["name"], "settingsNs": "", "settingsPath": [], "active": true])
             }
             func rank(_ entry: JSON) -> Int { entry["provider"].string == "deepseek-account" ? 0 : entry["provider"].string == "deepseek-official" ? 1 : 2 }

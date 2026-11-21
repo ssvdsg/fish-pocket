@@ -50,8 +50,6 @@
 	<string>$(DSH_APP_GROUP)</string>
 	<key>DshURLScheme</key>
 	<string>$(DSH_URL_SCHEME)</string>
-	<key>FishPocketAPIURL</key>
-	<string>$(FISH_POCKET_API_URL)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationQueriesSchemes</key>

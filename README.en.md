@@ -22,6 +22,8 @@
 
 <p align="center"><a href="https://fish.deepseek1024.com/en/">Website</a> · <a href="README.md">中文</a></p>
 
+> **Changes in this fork:** the Fish Pocket account, credits, In-App Purchases and the `fish-pocket` model route are removed. Only the local engine and bring-your-own-key providers remain (DeepSeek, OpenCode Go, custom OpenAI-compatible gateways, and so on). The upstream App Store / TestFlight links and branding still point at the original project.
+
 ## See it work
 
 <table>

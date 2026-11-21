@@ -113,9 +113,3 @@
     # (hold-to-talk, replies read aloud), sent with the stored DeepSeek key.
     - id: ios-speech
       name: ./plugins/ios-speech/index.mjs
-    # Third model route next to the DeepSeek account and API-key routes: DeepSeek
-    # models paid with Fish Pocket credits. Its own entry, never a profile in
-    # llm-pi-ai's settings: config for llm-pi-ai here would override the user's
-    # own providers and refuse every edit to them (plugins/fish-pocket).
-    - id: fish-pocket
-      name: ./plugins/fish-pocket/index.mjs

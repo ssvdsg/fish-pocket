@@ -38,12 +38,6 @@ if [ -n "${CI_BUILD_NUMBER:-}" ]; then
   sed -i '' -E "s/^( *CURRENT_PROJECT_VERSION: ).*/\\1\"$CI_BUILD_NUMBER\"/" project.yml
   grep -q "CURRENT_PROJECT_VERSION: \"$CI_BUILD_NUMBER\"" project.yml || { echo "project.yml: CURRENT_PROJECT_VERSION not found" >&2; exit 1; }
 fi
-# The Fish Pocket service's address, when the workflow's environment names one
-# (FISH_POCKET_API_URL). Without it the build has no Fish Pocket account, as a source build has none.
-if [ -n "${FISH_POCKET_API_URL:-}" ]; then
-  sed -i '' -E "s|^( *FISH_POCKET_API_URL: ).*|\\1\"$FISH_POCKET_API_URL\"|" project.yml
-  grep -q "FISH_POCKET_API_URL: \"$FISH_POCKET_API_URL\"" project.yml || { echo "project.yml: FISH_POCKET_API_URL not found" >&2; exit 1; }
-fi
 xcodegen generate --quiet
 # Xcode Cloud does not resolve package versions itself: it wants the pins inside the project.
 pins="DshIOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm"

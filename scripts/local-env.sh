@@ -15,10 +15,4 @@ local_env_load() {
   else
     echo "local settings: none ($file not found)"
   fi
-  # Optional: without it the app runs as a source build does, with no Fish Pocket account.
-  if [ -n "${FISH_POCKET_API_URL:-}" ]; then
-    echo "Fish Pocket account: on"
-  else
-    echo "Fish Pocket account: off (optional; set FISH_POCKET_API_URL to turn it on)"
-  fi
 }

@@ -6,12 +6,8 @@ struct StoreEntryDetail: View {
     let listing: StoreEntry
     let model: PluginStoreModel
     let install: (MarketChoice) -> Void
-    @State private var reporting = false
 
     private var entry: StoreEntry { model.latest(listing) }
-    /// Under review or taken down by Fish Pocket (`PluginReports`).
-    private var takedown: PluginReports.Takedown? { PluginReports.shared.takedown(listing.name) }
-    private var removed: Bool { takedown == .removed }
 
     /// Whether the installed plugin is switched on and running, as the plugin list reports it.
     private var runState: (text: String, problem: Bool)? {
@@ -55,8 +51,7 @@ struct StoreEntryDetail: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header.padding(.horizontal, 20).padding(.top, 12)
-                if let takedown { takedownNote(takedown).padding(.horizontal, 16).padding(.top, 16) }
-                if let version = entry.version, !entry.installable, !removed { compatibilityNote(version["compatibility"]) }
+                if let version = entry.version, !entry.installable { compatibilityNote(version["compatibility"]) }
                 StoreWebUINote().padding(.horizontal, 16).padding(.top, 20)
                 StoreCaption("介绍")
                 readme
@@ -66,7 +61,6 @@ struct StoreEntryDetail: View {
                     StoreCaption("版本")
                     versions
                 }
-                if PluginReports.shared.available { reportRow.padding(.top, 28) }
             }
             .padding(.bottom, 32)
             .readableWidth()
@@ -74,7 +68,6 @@ struct StoreEntryDetail: View {
         .background(Palette.background)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $reporting) { PluginReportSheet(entry: entry, market: model.market.url) }
     }
 
     private var header: some View {
@@ -176,7 +169,7 @@ struct StoreEntryDetail: View {
             .animation(.snappy(duration: 0.25), value: updatingThis)
             .animation(.snappy(duration: 0.25), value: update == nil)
             .onChange(of: updated) { _, version in if let version { refreshListing(until: version) } }
-        } else if entry.installable, !removed, let version = entry.version {
+        } else if entry.installable, let version = entry.version {
             Button("安装 \(entry.versionNumber)") { install(MarketChoice(entry: entry.json, version: version)) }
                 .buttonStyle(.capsule(height: 48))
                 .disabled(!model.installable(app))
@@ -190,57 +183,6 @@ struct StoreEntryDetail: View {
             .foregroundStyle(Palette.waiting)
             .padding(.horizontal, 20)
             .padding(.top, 16)
-    }
-
-    /// What Fish Pocket's review made of this plugin. A plugin taken down installs no more; one already
-    /// here keeps running until the user switches it off, which this offers.
-    private func takedownNote(_ takedown: PluginReports.Takedown) -> some View {
-        let package = app.plugins.package(listing.name).flatMap { $0.installed && $0.enabled ? $0 : nil }
-        return HStack(alignment: .top, spacing: 10) {
-            Image(systemName: takedown == .removed ? "nosign" : "hourglass")
-                .font(.subheadline)
-                .foregroundStyle(takedown == .removed ? Palette.removed : Palette.waiting)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(takedown == .removed ? "已下架" : "审核中").font(.subheadline.weight(.medium)).foregroundStyle(Palette.ink)
-                Text(takedown == .removed
-                     ? "经 Fish Pocket 审核，这个插件存在问题，已从插件市场下架，不能再安装。"
-                     : "这个插件被举报，正在审核。安装前请确认你信任它的来源。")
-                    .font(.footnote)
-                    .foregroundStyle(Palette.secondary)
-                    .lineSpacing(3)
-                if takedown == .removed, let package {
-                    Button("停用插件") { Task { await app.plugins.setEnabled(package, false) } }
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(Palette.ink)
-                        .disabled(app.plugins.busy.contains(package.name))
-                        .padding(.top, 2)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(14)
-        .background(Palette.grouped, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
-
-    /// 举报: the way to tell Fish Pocket a plugin breaks the rules or does harm.
-    private var reportRow: some View {
-        Button {
-            Haptics.tap()
-            reporting = true
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "flag").font(.callout).foregroundStyle(Palette.secondary)
-                Text("举报此插件").font(.callout).foregroundStyle(Palette.ink)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.faint)
-            }
-            .padding(.horizontal, 18)
-            .frame(minHeight: 52)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(Palette.grouped, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .padding(.horizontal, 16)
     }
 
     // MARK: Documents and facts
@@ -321,7 +263,7 @@ struct StoreEntryDetail: View {
                     if installed { PluginTag(text: String(localized: "当前已安装")) }
                     if !allowed { PluginTag(text: String(localized: "不兼容"), tone: Palette.removed) }
                     Spacer(minLength: 0)
-                    if allowed, !installed, !removed, model.status(entry, app) != "provided" {
+                    if allowed, !installed, model.status(entry, app) != "provided" {
                         Button("安装") {
                             // An update goes only forward (`updateBundle`), as on the web; an older version
                             // goes through the install sheet, which says what the Host makes of it.
@@ -496,7 +438,7 @@ struct StoreInstallConfirm: View {
                     }
                 }
                 .buttonStyle(.capsule())
-                .disabled(pinned != nil || PluginReports.shared.removed(entry.name))
+                .disabled(pinned != nil)
             }
         }
         .padding(20)

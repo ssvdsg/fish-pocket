@@ -33,17 +33,6 @@ enum WhatsNew {
         }
     }
 
-    /// Said only by a build that has the account: one made without the service's address
-    /// (a fork, a local build) shows it nowhere, so has nothing to announce.
-    private static var fishPocketAccount: [Feature] {
-        guard FishPocketAPI.available else { return [] }
-        return [
-            Feature(symbol: "sparkles",
-                    title: "Fish Pocket 账号",
-                    detail: "不需要 DeepSeek 账号，也不需要 API Key：登录 Fish Pocket 账号，就能用账号里的额度对话，按用量扣积分。额度在 App Store 版本里购买，买了不会过期。入口在设置 → 连接方式。"),
-        ]
-    }
-
     /// Newest first. Until the app reaches an entry's version (and build, when it names one),
     /// the entry is not shown. Entries of one version are shown together, newest first.
     static let releases: [Release] = [
@@ -94,7 +83,7 @@ enum WhatsNew {
             Feature(symbol: "photo.on.rectangle",
                     title: "把对话分享成图片",
                     detail: "点会话标题的菜单，或长按一条回复，选「分享为图片」。挑几轮对话画成一张长图，发给别人或存进相册，密钥会自动打码。"),
-        ] + fishPocketAccount + [
+        ] + [
             Feature(symbol: "app.badge",
                     title: "换个 App 图标",
                     detail: "设置 → App 图标里可以把主屏幕上的图标换成别的颜色或贴纸版的大肥鱼，也可以换成不带人物的鲸鱼图标，或者只写着 Fish Pocket 的字标。"),

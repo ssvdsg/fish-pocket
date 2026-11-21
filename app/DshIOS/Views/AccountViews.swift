@@ -77,8 +77,6 @@ struct SignInSheet: View {
     var autoStart = false
     /// The API Key alternative; nil hides it.
     var addAPIKey: (() -> Void)?
-    /// The Fish Pocket credits alternative; nil hides it.
-    var useFishPocket: (() -> Void)?
 
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -173,18 +171,10 @@ struct SignInSheet: View {
         }
     }
 
-    /// The ways in, side by side: the Fish Pocket account (when this build has the service),
-    /// the DeepSeek account, an API key. Choosing one is the whole decision.
+    /// The ways in, side by side: the DeepSeek account and an API key.
     @ViewBuilder
     private var choices: some View {
         VStack(spacing: 10) {
-            if let useFishPocket {
-                SignInChoice(
-                    icon: "sparkles",
-                    title: "Fish Pocket 账号",
-                    detail: "在 App 内购买额度，按用量扣费。"
-                ) { dismiss(); useFishPocket() }
-            }
             SignInChoice(
                 icon: "person.crop.circle",
                 title: phase == "expired" || phase == "failed" || localFailed ? "重新登录 DeepSeek 账号" : "DeepSeek 账号",

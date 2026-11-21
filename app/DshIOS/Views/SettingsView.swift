@@ -90,16 +90,8 @@ private struct SettingsList: View {
                 }
             }
 
-            // The ways to reach a model, each on its own: Fish Pocket credits (when this build
-            // has the service), the DeepSeek account, an API key.
+            // The ways to reach a model: the DeepSeek account, or an API key.
             Section {
-                if app.fishPocket.available {
-                    NavigationLink { FishPocketPage() } label: {
-                        row("Fish Pocket 账号", "sparkles", app.fishPocket.signedIn
-                            ? (app.fishPocket.balance.map { String(localized: "\($0) 积分") } ?? String(localized: "已登录"))
-                            : String(localized: "未登录"))
-                    }
-                }
                 NavigationLink { AccountPage() } label: {
                     row("DeepSeek 账号", "person.crop.circle", app.account.signedIn ? (app.account.displayName ?? String(localized: "已登录")) : String(localized: "未登录"))
                 }

@@ -172,16 +172,11 @@ final class SessionModel {
             if event["type"].string == "turn/end" {
                 if let failure = TurnFailure(reason: event["data"]["reason"]) {
                     if failure.isQuota {
-                        // Fish Pocket credits are topped up in the app; DeepSeek balances on Platform.
-                        if modelCatalog?.selection(self)?.provider == FishPocketAPI.provider {
-                            app.fishPocket.reportQuota()
-                        } else {
-                            app.account.reportQuota(code: failure.code ?? "QUOTA")
-                        }
+                        app.account.reportQuota(code: failure.code ?? "QUOTA")
                     }
                     // A key that stopped working is the conversation's card to explain; none at all is the first step.
                     if failure.credentialProblem == .missing {
-                        app.requestCredentials(modelCatalog?.selection(self)?.provider == FishPocketAPI.provider ? .fishPocket : .start)
+                        app.requestCredentials(.start)
                     }
                 } else if event["data"]["reason"]["kind"].string == "completed", subagentAddress == nil, hasReply,
                           queued.isEmpty, composer.text.isEmpty {

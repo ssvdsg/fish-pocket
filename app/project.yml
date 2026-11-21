@@ -224,8 +224,6 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.wsw.dsh-ios
             CFBundleURLSchemes: ["$(DSH_URL_SCHEME)"]
-        # Fish Pocket credits (FishPocketAPI): the service's https origin; empty hides the feature.
-        FishPocketAPIURL: $(FISH_POCKET_API_URL)
         # Shared/WidgetSnapshot.swift reads the group from here.
         DshAppGroup: $(DSH_APP_GROUP)
         DshURLScheme: $(DSH_URL_SCHEME)
@@ -237,8 +235,6 @@ targets:
       path: DshIOS/DshIOS.entitlements
       properties:
         com.apple.security.application-groups: ["$(DSH_APP_GROUP)"]
-        # Sign in with Apple (Fish Pocket accounts).
-        com.apple.developer.applesignin: [Default]
         # 本机能力「健康」。只读：写健康数据责任太大，而且「不得写入虚假数据」
         # 是硬条款（docs/native-services.md §3、§6.1）。
         com.apple.developer.healthkit: true
@@ -248,9 +244,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wsw.dsh-ios
-        # The Fish Pocket API origin (https://…). Empty in source builds: forks and local
-        # builds run without the service; the release build sets it.
-        FISH_POCKET_API_URL: ""
         # Design tokens (docs/design/README.md §3) live in Assets.xcassets; the accent is the ink colour.
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         # The icons people can switch to in Settings (DshIOS/Views/AppIconPage.swift); drawn by docs/design/brand (make-icons.py and the make-*-icons.swift scripts).
