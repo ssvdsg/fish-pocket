@@ -41,6 +41,20 @@ extension AppModel {
         return profile["apiKeyEnv"].string.flatMap { $0.isEmpty ? nil : $0 }
     }
 
+    /// The OpenCode Go API-key reference, when this fork's default provider is
+    /// configured but its key is not stored yet. nil falls back to the official route.
+    func opencodeKeyRef() async -> String? {
+        guard let declared = try? await client.call("llm/listConfigurableProviders"),
+              let settings = try? await client.call("settings/describe"),
+              let entry = declared.array.first(where: { $0["provider"].string == "opencode-go" }),
+              let ns = entry["settingsNs"].string else { return nil }
+        var profile = settings["namespaces"].array.first { $0["ns"].string == ns }?["value"] ?? .null
+        for key in entry["settingsPath"].array.compactMap(\.string) { profile = profile[key] }
+        guard let ref = profile["apiKeyEnv"].string, !ref.isEmpty else { return nil }
+        let described = try? await client.call("credentials/describe", ["refs": [.string(ref)]])
+        return described?[ref]["configured"].bool == true ? nil : ref
+    }
+
     /// The official provider join, reduced to the question the step asks: any
     /// active provider with its credential stored (or owing none, or the signed-in
     /// account with models) ends it; otherwise only the official route can prompt.

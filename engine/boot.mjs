@@ -98,6 +98,20 @@ try {
   console.error('[dsh-ios] permission default not set', error);
 }
 
+// OpenCode Go is the first-run provider and the default model, once per install.
+// Like the permission default it goes into the profile patch, so 设置 can change it.
+try {
+  const { seedOpenCodeDefault } = await import('./runtime/opencode-default.mjs');
+  const outcome = await seedOpenCodeDefault({
+    home: process.env.DSH_HOME,
+    marker: path.join(process.env.DSH_HOME, '.ios-opencode-default'),
+    installAnchor: path.join(here, 'node_modules/@deepseek-ai/dsh/package.json'),
+  });
+  if (outcome !== 'done') console.log(`[dsh-ios] OpenCode default: ${outcome}`);
+} catch (error) {
+  console.error('[dsh-ios] OpenCode default not set', error);
+}
+
 // A minute for reading a plugin index instead of 15 s (runtime/market-timeout.mjs).
 try {
   const { seedMarketTimeout } = await import('./runtime/market-timeout.mjs');

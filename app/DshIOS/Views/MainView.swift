@@ -130,7 +130,7 @@ struct MainView: View {
     /// it asks for them (`SessionModel`), as do the sign-in buttons.
     enum Onboarding: Identifiable {
         case signIn(ref: String, autoStart: Bool = false)
-        case key(ref: String)
+        case key(ref: String, provider: String? = nil)
         var id: String {
             switch self {
             case .signIn: "sign-in"
@@ -549,8 +549,8 @@ struct MainView: View {
                     autoStart: autoStart,
                     addAPIKey: { keyEditorRef = ref },
                 )
-            case .key(let ref):
-                OnboardingKeySheet(ref: ref) { onboarding = nil }
+            case .key(let ref, let provider):
+                OnboardingKeySheet(ref: ref, provider: provider) { onboarding = nil }
             }
         }
         .sheet(item: $whatsNew) { WhatsNewSheet(release: $0) }
@@ -603,6 +603,10 @@ struct MainView: View {
         sheet = nil
         if case .settings = step { sheet = .settings; return }
         if case .imageGen = step { sheet = .imageGen; return }
+        if case .start = step, let ref = await app.opencodeKeyRef() {
+            onboarding = .key(ref: ref, provider: "OpenCode Go")
+            return
+        }
         guard let ref = await app.officialKeyRef() else {
             if case .officialKey = step { sheet = .settings } else { sheet = .signIn }
             return

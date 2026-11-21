@@ -3,8 +3,10 @@ import SwiftUI
 /// 「添加一个 API Key 开始使用」: the official credential-only editor. Only the
 /// key is written (`credentials/set`), never the settings.
 struct OnboardingKeySheet: View {
-    /// The credential reference the official route's profile names.
+    /// The credential reference the profile names.
     let ref: String
+    /// The provider this key belongs to; nil keeps the official DeepSeek wording.
+    var provider: String? = nil
     let finish: () -> Void
     @Environment(AppModel.self) private var app
     @State private var key = ""
@@ -27,7 +29,7 @@ struct OnboardingKeySheet: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("添加一个 API Key 开始使用").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                Text("配置 DeepSeek 官方模型，即可开始使用。").font(.subheadline).foregroundStyle(Palette.secondary)
+                Text(provider.map { "配置 \($0)，即可开始使用。" } ?? "配置 DeepSeek 官方模型，即可开始使用。").font(.subheadline).foregroundStyle(Palette.secondary)
             }
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
