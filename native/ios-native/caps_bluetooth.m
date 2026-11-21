@@ -270,6 +270,7 @@ static void bluetooth_connect(NSDictionary *args, DshNativeReply reply) {
     NSNumber *timeoutArg = args[@"timeout"];
     double timeout = [timeoutArg isKindOfClass:NSNumber.class] ? timeoutArg.doubleValue : 10;
     timeout = MAX(1, MIN(30, timeout));
+    peripheral.delegate = bluetooth;
     NSUUID *uuid = peripheral.identifier;
     if (peripheral.state == CBPeripheralStateConnected) {
       if (peripheral.services.count > 0) {
@@ -281,7 +282,7 @@ static void bluetooth_connect(NSDictionary *args, DshNativeReply reply) {
           reply(nil, @"a connection to that peripheral is already in progress");
           return;
         }
-        bluetooth.connects[uuid] = reply;
+        bluetooth.connects[uuid] = [reply copy];
         [bluetooth timeout:timeout block:^{
           void (^done)(NSDictionary *, NSString *) = bluetooth.connects[uuid];
           if (done == nil) return;
@@ -298,7 +299,7 @@ static void bluetooth_connect(NSDictionary *args, DshNativeReply reply) {
     }
     bluetooth.peripherals[uuid] = peripheral;
     peripheral.delegate = bluetooth;
-    bluetooth.connects[uuid] = reply;
+    bluetooth.connects[uuid] = [reply copy];
     [bluetooth timeout:timeout block:^{
       void (^done)(NSDictionary *, NSString *) = bluetooth.connects[uuid];
       if (done == nil) return;
@@ -345,7 +346,7 @@ static void bluetooth_characteristics(NSDictionary *args, DshNativeReply reply) 
     reply(nil, @"characteristics for that service are already being discovered");
     return;
   }
-  bluetooth.characteristics[key] = reply;
+  bluetooth.characteristics[key] = [reply copy];
   [bluetooth timeout:10 block:^{
     void (^done)(NSDictionary *, NSString *) = bluetooth.characteristics[key];
     if (done == nil) return;
@@ -378,7 +379,7 @@ static void bluetooth_read(NSDictionary *args, DshNativeReply reply) {
     reply(nil, @"a read of that characteristic is already pending");
     return;
   }
-  bluetooth.reads[key] = reply;
+  bluetooth.reads[key] = [reply copy];
   [bluetooth timeout:10 block:^{
     void (^done)(NSDictionary *, NSString *) = bluetooth.reads[key];
     if (done == nil) return;
@@ -418,7 +419,7 @@ static void bluetooth_write(NSDictionary *args, DshNativeReply reply) {
     reply(nil, @"a write to that characteristic is already pending");
     return;
   }
-  bluetooth.writes[key] = reply;
+  bluetooth.writes[key] = [reply copy];
   [bluetooth timeout:10 block:^{
     void (^done)(NSDictionary *, NSString *) = bluetooth.writes[key];
     if (done == nil) return;
@@ -452,7 +453,7 @@ static void bluetooth_notify(NSDictionary *args, DshNativeReply reply) {
     reply(nil, @"a notification change for that characteristic is already pending");
     return;
   }
-  bluetooth.notifies[key] = reply;
+  bluetooth.notifies[key] = [reply copy];
   [bluetooth timeout:10 block:^{
     void (^done)(NSDictionary *, NSString *) = bluetooth.notifies[key];
     if (done == nil) return;

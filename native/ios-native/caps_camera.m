@@ -20,21 +20,17 @@ static dispatch_queue_t camera_queue(void) {
   return queue;
 }
 
-static void ensure_camera(void (^next)(BOOL granted, NSString *error)) {
+/// Whether the user has already allowed the camera. Tool calls never raise the
+/// system prompt: like every capability here, only the capability screen asks.
+static BOOL camera_allowed(NSString **error) {
   AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-  if (status == AVAuthorizationStatusAuthorized) {
-    next(YES, nil);
-    return;
+  if (status == AVAuthorizationStatusAuthorized) return YES;
+  if (status == AVAuthorizationStatusDenied || status == AVAuthorizationStatusRestricted) {
+    *error = @"camera access is off for this app. The user can turn it on in Settings > Privacy & Security > Camera.";
+  } else {
+    *error = @"the user has not switched camera access on yet. They can turn it on under Device capabilities on the app's Explore tab — only they can grant it.";
   }
-  if (status == AVAuthorizationStatusNotDetermined) {
-    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
-      dsh_native_on_main(^{
-        next(granted, granted ? nil : @"camera access was refused. The user can allow it in Settings > Privacy & Security > Camera.");
-      });
-    }];
-    return;
-  }
-  next(NO, @"camera access is off for this app. The user can turn it on in Settings > Privacy & Security > Camera.");
+  return NO;
 }
 
 /// The engine path for a file the native side just wrote, round-tripped so the
@@ -148,12 +144,12 @@ static void capture_picture(DshNativeReply reply) {
     reply(nil, @"this device has no camera available to the app");
     return;
   }
-  ensure_camera(^(BOOL granted, NSString *error) {
-    if (!granted) {
-      reply(nil, error);
-      return;
-    }
-    dsh_native_on_main(^{
+  NSString *permissionError = nil;
+  if (!camera_allowed(&permissionError)) {
+    reply(nil, permissionError);
+    return;
+  }
+  dsh_native_on_main(^{
       id<DshNativeBridging> bridge = DshNativeCurrentBridge();
       if (bridge == nil) {
         reply(nil, @"the app cannot show the camera right now");
@@ -181,7 +177,6 @@ static void capture_picture(DshNativeReply reply) {
         }
         sCaptureSession = nil;
       }];
-    });
   });
 }
 
@@ -336,12 +331,12 @@ static void scan_codes(DshNativeReply reply) {
     reply(nil, @"this device has no camera available to the app");
     return;
   }
-  ensure_camera(^(BOOL granted, NSString *error) {
-    if (!granted) {
-      reply(nil, error);
-      return;
-    }
-    dsh_native_on_main(^{
+  NSString *permissionError = nil;
+  if (!camera_allowed(&permissionError)) {
+    reply(nil, permissionError);
+    return;
+  }
+  dsh_native_on_main(^{
       id<DshNativeBridging> bridge = DshNativeCurrentBridge();
       if (bridge == nil) {
         reply(nil, @"the app cannot show the camera right now");
@@ -364,12 +359,22 @@ static void scan_codes(DshNativeReply reply) {
         }
         sScanController = nil;
       }];
-    });
   });
 }
 
 void DshCameraGrantAccess(void (^done)(BOOL granted, NSString *error)) {
-  ensure_camera(done);
+  AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+  if (status == AVAuthorizationStatusAuthorized) {
+    done(YES, nil);
+    return;
+  }
+  if (status == AVAuthorizationStatusDenied || status == AVAuthorizationStatusRestricted) {
+    done(NO, nil);
+    return;
+  }
+  [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL allowed) {
+    dsh_native_on_main(^{ done(allowed, nil); });
+  }];
 }
 
 void dsh_native_camera(NSString *op, NSDictionary *args, DshNativeReply reply) {

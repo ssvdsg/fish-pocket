@@ -23,6 +23,8 @@
 <p align="center"><a href="https://fish.deepseek1024.com">官网</a> · <a href="README.en.md">English</a></p>
 
 > **本 fork 的改动：** 已移除 Fish Pocket 账号、积分、App 内购买和 `fish-pocket` 模型路由。只保留本地引擎与自带 API Key 的模型提供商（DeepSeek、OpenCode Go、自定义 OpenAI 兼容服务等）。上游的 App Store / TestFlight 链接和品牌仍指向原项目。
+>
+> 新增本机工具：`shortcuts`（运行快捷指令）、`camera`（拍照 / 实时扫码）、`bluetooth`（BLE 扫描、连接、读写）、`nfc`（读 NDEF 标签）。`files export` 原本就有。蓝牙和 NFC 在「探索 → 本机能力」里打开；NFC 需要签名 profile 带 `com.apple.developer.nfc.readersession.formats = NDEF`。
 
 ## 看它干活
 
