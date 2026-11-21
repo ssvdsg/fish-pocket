@@ -57,9 +57,10 @@ test('tool names are unique and stable', () => {
   // Pinned because they reach the model's prompt and a rename is a breaking
   // change for any skill or plugin that mentions them.
   assert.deepEqual(names.sort(),
-    ['alarm', 'browser', 'calendar', 'clipboard', 'compose', 'contacts', 'device_info', 'files', 'health',
-     'homekit', 'image_analysis', 'location', 'maps', 'music', 'notify', 'open_url', 'photos',
-     'reminders', 'speak', 'text_analysis', 'transcribe_audio', 'weather']);
+    ['alarm', 'bluetooth', 'browser', 'calendar', 'camera', 'clipboard', 'compose', 'contacts',
+     'device_info', 'files', 'health', 'homekit', 'image_analysis', 'location', 'maps', 'music',
+     'nfc', 'notify', 'open_url', 'photos', 'reminders', 'shortcuts', 'speak', 'text_analysis',
+     'transcribe_audio', 'weather']);
 });
 
 test('no tool shares a name with one DSH registers itself', () => {
