@@ -117,11 +117,14 @@ jobs:
             DEVELOPMENT_TEAM="" \
             build 2>&1 | tee build/xcodebuild.log
 
-      - name: Package unsigned IPA
+      - name: Package IPAs
         run: |
           set -euo pipefail
           APP="app/build/DerivedData/Build/Products/Release-iphoneos/DshIOS.app"
           test -d "$APP"
+
+          # The plain unsigned package: no signature anywhere. Some re-signing
+          # tools handle this best, so it stays the primary artifact.
           rm -rf build/ipa
           mkdir -p build/ipa/Payload
           ditto "$APP" build/ipa/Payload/DshIOS.app
@@ -133,13 +136,36 @@ jobs:
           shasum -a 256 build/FishPocket-unsigned.ipa | tee build/FishPocket-unsigned.ipa.sha256
           unzip -l build/FishPocket-unsigned.ipa | head -8
 
-      - name: Upload unsigned IPA
+          # An ad-hoc signed package. It cannot be installed as it is, but the
+          # signature slot and every nested CodeResources are complete. Re-signing
+          # tools that fail while adding a signature to a bare main executable
+          # (the "CodeDirectory does not match the Mach-O" repair loop) can replace
+          # this signature instead of building one from nothing.
+          rm -rf build/adhoc
+          mkdir -p build/adhoc/Payload
+          ditto "$APP" build/adhoc/Payload/DshIOS.app
+          find build/adhoc/Payload -name embedded.mobileprovision -delete
+          find build/adhoc/Payload -name '._*' -delete
+          find build/adhoc/Payload -name .DS_Store -delete
+          ADHOC="build/adhoc/Payload/DshIOS.app"
+          # --deep signs nested code; a second pass picks up anything the first
+          # walk did not reach before its parent was sealed.
+          codesign --force --deep --sign - --timestamp=none "$ADHOC"
+          codesign --force --deep --sign - --timestamp=none "$ADHOC"
+          codesign --verify --deep --strict --verbose=2 "$ADHOC"
+          (cd build/adhoc && zip -qry ../FishPocket-adhoc.ipa Payload)
+          shasum -a 256 build/FishPocket-adhoc.ipa | tee build/FishPocket-adhoc.ipa.sha256
+          codesign -dvvv "$ADHOC" 2>&1 | head -12
+
+      - name: Upload IPAs
         uses: actions/upload-artifact@v4
         with:
-          name: FishPocket-unsigned-ipa-${{ github.run_number }}
+          name: FishPocket-ipa-${{ github.run_number }}
           path: |
             build/FishPocket-unsigned.ipa
             build/FishPocket-unsigned.ipa.sha256
+            build/FishPocket-adhoc.ipa
+            build/FishPocket-adhoc.ipa.sha256
           if-no-files-found: error
           retention-days: 14
 
