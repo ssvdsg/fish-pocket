@@ -180,6 +180,28 @@ jobs:
           shasum -a 256 build/FishPocket-adhoc.ipa | tee build/FishPocket-adhoc.ipa.sha256
           codesign -dvvv "$ADHOC" 2>&1 | head -12
 
+      - name: Package stripped slim IPA
+        run: |
+          set -euo pipefail
+          APP="app/build/DerivedData/Build/Products/Release-iphoneos/DshIOS.app"
+          test -d "$APP"
+          rm -rf build/slimstrip
+          mkdir -p build/slimstrip/Payload
+          ditto "$APP" build/slimstrip/Payload/DshIOS.app
+          # The main executable carries ~36 MB of symbol and string tables that
+          # only debugging uses. Removing them keeps a final executable working
+          # (dyld uses the export trie) and takes the file from ~53 MB to ~19 MB,
+          # which is also far below a re-signing tool's page-count or slot-size
+          # limits if it has any. Extensions and the Watch app are left out for
+          # the same reason as the slim package: 全能签 does not sign them.
+          rm -rf build/slimstrip/Payload/DshIOS.app/PlugIns
+          rm -rf build/slimstrip/Payload/DshIOS.app/Watch
+          BIN=build/slimstrip/Payload/DshIOS.app/DshIOS
+          strip -u -r "$BIN" || strip -x "$BIN"
+          ls -lh "$BIN"
+          (cd build/slimstrip && zip -qry ../FishPocket-slim-stripped.ipa Payload)
+          shasum -a 256 build/FishPocket-slim-stripped.ipa | tee build/FishPocket-slim-stripped.ipa.sha256
+
       - name: Upload IPAs
         uses: actions/upload-artifact@v4
         with:
@@ -189,6 +211,8 @@ jobs:
             build/FishPocket-unsigned.ipa.sha256
             build/FishPocket-adhoc.ipa
             build/FishPocket-adhoc.ipa.sha256
+            build/FishPocket-slim-stripped.ipa
+            build/FishPocket-slim-stripped.ipa.sha256
           if-no-files-found: error
           retention-days: 14
 
