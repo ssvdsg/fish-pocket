@@ -46,7 +46,7 @@ static DshNFCSession *sNFCSession;
   DshNativeReply reply = self.reply;
   self.reply = nil;
   sNFCSession = nil;
-  if (error.code == NFCReaderErrorReaderSessionInvalidationErrorUserCanceled) {
+  if (error.code == NFCReaderSessionInvalidationErrorUserCanceled) {
     if (reply) reply(@{@"cancelled": @YES, @"records": @[]}, nil);
     return;
   }
