@@ -148,11 +148,34 @@ jobs:
           find build/adhoc/Payload -name '._*' -delete
           find build/adhoc/Payload -name .DS_Store -delete
           ADHOC="build/adhoc/Payload/DshIOS.app"
-          # --deep signs nested code; a second pass picks up anything the first
-          # walk did not reach before its parent was sealed.
-          codesign --force --deep --sign - --timestamp=none "$ADHOC"
-          codesign --force --deep --sign - --timestamp=none "$ADHOC"
-          codesign --verify --deep --strict --verbose=2 "$ADHOC"
+          # Sign inside out. `codesign --deep` only replaces signatures that are
+          # already there; it leaves a nested bundle unsigned, and iOS then
+          # rejects the extension or Watch app. Sign every nested bundle first,
+          # then the app that seals them.
+          for fw in "$ADHOC"/Frameworks/*.framework; do
+            [ -d "$fw" ] || continue
+            codesign --force --sign - --timestamp=none "$fw"
+          done
+          for appex in "$ADHOC"/PlugIns/*.appex; do
+            [ -d "$appex" ] || continue
+            codesign --force --sign - --timestamp=none "$appex"
+          done
+          for watch in "$ADHOC"/Watch/*.app; do
+            [ -d "$watch" ] || continue
+            codesign --force --sign - --timestamp=none "$watch"
+          done
+          codesign --force --sign - --timestamp=none "$ADHOC"
+          # Nothing nested may be left unsigned: a signed parent that seals an
+          # unsigned extension is exactly the half-signed state a re-signing
+          # tool trips over.
+          for bundle in "$ADHOC"/Frameworks/*.framework "$ADHOC"/PlugIns/*.appex "$ADHOC"/Watch/*.app; do
+            [ -d "$bundle" ] || continue
+            test -f "$bundle/_CodeSignature/CodeResources" || {
+              echo "not signed: $bundle" >&2
+              exit 1
+            }
+          done
+          codesign --verify --deep --strict --verbose=4 "$ADHOC"
           (cd build/adhoc && zip -qry ../FishPocket-adhoc.ipa Payload)
           shasum -a 256 build/FishPocket-adhoc.ipa | tee build/FishPocket-adhoc.ipa.sha256
           codesign -dvvv "$ADHOC" 2>&1 | head -12
