@@ -15,14 +15,14 @@ static NSString *const kTimeoutKey = @"timeout";
 @property (nonatomic) CBCentralManager *central;
 @property (nonatomic) NSMutableDictionary<NSUUID *, CBPeripheral *> *peripherals;
 @property (nonatomic) NSMutableDictionary<NSUUID *, NSDictionary *> *advertisements;
-@property (nonatomic) NSMutableArray<void (^)(NSString *)> *ready;
+@property (nonatomic) NSMutableArray *ready;
 @property (nonatomic, copy) void (^scanReply)(NSDictionary *, NSString *);
 @property (nonatomic) NSMutableDictionary<NSUUID *, NSDictionary *> *found;
-@property (nonatomic) NSMutableDictionary<NSUUID *, void (^)(NSDictionary *, NSString *)> *connects;
-@property (nonatomic) NSMutableDictionary<NSString *, void (^)(NSDictionary *, NSString *)> *characteristics;
-@property (nonatomic) NSMutableDictionary<NSString *, void (^)(NSDictionary *, NSString *)> *reads;
-@property (nonatomic) NSMutableDictionary<NSString *, void (^)(NSDictionary *, NSString *)> *writes;
-@property (nonatomic) NSMutableDictionary<NSString *, void (^)(NSDictionary *, NSString *)> *notifies;
+@property (nonatomic) NSMutableDictionary *connects;
+@property (nonatomic) NSMutableDictionary *characteristics;
+@property (nonatomic) NSMutableDictionary *reads;
+@property (nonatomic) NSMutableDictionary *writes;
+@property (nonatomic) NSMutableDictionary *notifies;
 @end
 
 @implementation DshBluetooth
